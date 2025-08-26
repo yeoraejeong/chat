@@ -9,7 +9,7 @@ type ChatMsg = { role: "user" | "bot"; content: string };
 // Very small parser to render \( ... \) inline and \[ ... \] block LaTeX inside mixed text.
 function renderWithLatex(text: string) {
   const parts: { type: "text" | "inline" | "block"; value: string }[] = [];
-  let remaining = text;
+  const remaining = text;
 
   // First split out block math \[ ... \]
   const blockRegex = /\\\[((?:.|\n)*?)\\\]/g;
@@ -97,7 +97,7 @@ export default function Home() {
       });
       const data = await res.json();
       setHistory((h) => [...h, { role: "bot", content: data.answer || "응답이 없습니다." }]);
-    } catch (e) {
+    } catch {
       setHistory((h) => [...h, { role: "bot", content: "오류가 발생했습니다." }]);
     } finally {
       setIsSending(false);
