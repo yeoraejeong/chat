@@ -65,10 +65,9 @@ export async function POST(req: NextRequest) {
     messages.push({
       role: "user",
       content: [
-        { type: "text", text: question || "이 이미지를 분석해줘." },
-        { type: "image_url", image_url: { url: image } },
+        { type: "text", text: question || "이 이미지를 분석해줘." },        { type: "image_url", image_url: { url: image } },
       ],
-    } as any);
+    } as ChatCompletionMessageParam);
   } else {
     messages.push({ role: "user", content: question || "문제를 입력해줘." });
   }
