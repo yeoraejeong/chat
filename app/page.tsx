@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import TeX from "@matejmazur/react-katex";
 import "katex/dist/katex.min.css";
+import Tesseract from "tesseract.js";
 
 type ChatMsg = { role: "user" | "bot"; content: string };
 
@@ -65,6 +66,8 @@ export default function Home() {
   const [image, setImage] = useState<string | null>(null);
   const [history, setHistory] = useState<ChatMsg[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [isOcring, setIsOcring] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -77,11 +80,35 @@ export default function Home() {
       setImage(null);
       return;
     }
+    // 1) Preview image as base64 for Vision API
     const reader = new FileReader();
     reader.onloadend = () => {
       setImage(reader.result as string);
     };
     reader.readAsDataURL(file);
+
+    // 2) Run OCR (kor+eng) and append recognized text into the question box
+    setIsOcring(true);
+    setOcrProgress(0);
+    Tesseract.recognize(file, "kor+eng", {
+      logger: (m) => {
+        if (m.status === "recognizing text" && typeof m.progress === "number") {
+          setOcrProgress(Math.round(m.progress * 100));
+        }
+      },
+    })
+      .then(({ data: { text } }) => {
+        const cleaned = (text || "").trim();
+        if (cleaned) {
+          setQuestion((prev) => (prev ? prev + "\n" + cleaned : cleaned));
+        }
+      })
+      .catch(() => {
+        // silently ignore OCR errors; Vision path can still handle the image
+      })
+      .finally(() => {
+        setIsOcring(false);
+      });
   };
 
   const sendMessage = async () => {
@@ -177,6 +204,11 @@ export default function Home() {
               />
               <div className="flex items-center justify-between">
                 <input type="file" accept="image/*" onChange={handleImageChange} />
+              </div>
+              {isOcring && (
+                <div className="text-xs text-gray-600 mt-1">OCR 진행 중... {ocrProgress}%</div>
+              )}
+              <div className="flex items-center justify-between">
                 <button
                   onClick={sendMessage}
                   disabled={isSending}
